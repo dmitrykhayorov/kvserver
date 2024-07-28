@@ -1,0 +1,94 @@
+openapi: 3.0.0
+
+info:
+  title: Key/Value server API
+  version: 0.0.1
+
+servers:
+# for testing
+  - url: http://localhost:8801
+
+paths:
+  /get:
+    get:
+      summary: returns a value
+      parameters:
+        - in: header
+          name: uuid
+          description: uuid of transaction
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: returns a json with key and value
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  type: string
+        404:
+          description: returns not found if uuid correct, but value not in storage
+        400:
+          description: bad request if no or incorrect uuid
+        500:
+          description: cannot marshal response json
+  /set:
+    post:
+      summary: puts value in storage. if value already exist, changes it.
+      parameters:
+        - in: header
+          name: uuid
+          description: uuid of transaction
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: key and value to put in storage
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                value:
+                  type: string
+      responses:
+        200:
+          description: created new value in storage (with replications if other nodes available)
+          content:
+             application/json:
+               schema:
+                 properties:
+                   result:
+                    type: string
+                    example: "Created (2 replicas)"
+        400:
+          description: cannot unmarshal body / wrong or no uuid /
+        500:
+          description: cannot replicate operation, but current node saved value
+  /delete:
+    delete:
+      summary: deletes value from storage associated with uuid
+      parameters:
+        - in: header
+          name: uuid
+          description: uuid of transaction
+          required: true
+      responses:
+        200:
+          description: value deleted (even if didn't exist)
+          content:
+            application/json:
+              schema:
+                properties:
+                  result:
+                    type: string
+                    example: "Deleted (2 replicas)"
+        400:
+          description: wrong or no uuid
+        500:
+          description: error occurred while deleting replicas
